@@ -1,5 +1,6 @@
 package com.idip.idiptecnologia.security.Services;
 
+import com.idip.idiptecnologia.exceptions.PasswordInvalidException;
 import com.idip.idiptecnologia.models.entities.UserModel;
 import com.idip.idiptecnologia.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,15 +23,22 @@ public class UserDetailsServiceImpl implements UserDetailsService{
     @Autowired
     private PasswordEncoder encoder;
 
+    public  UserDetails authenticate(UserModel userModel){
+        UserDetails userDetails = loadUserByUsername(userModel.getUserEmail());
+       boolean isMatchPassword = encoder.matches(userModel.getPassword(), userDetails.getPassword());
+
+       if(isMatchPassword){
+           return userDetails;
+       }
+       throw new PasswordInvalidException();
+    }
 
     @Override
     @Transactional
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         UserModel user = userRepository.findByUserEmail(username)
                                        .orElseThrow(() -> new UsernameNotFoundException("User Not Found with username: " + username));
-//        if (user.isActive() != null) {
-//            throw new UsernameNotFoundException("User " + user.getUserName() + " isn't active, contact the admin");
-//        }
+
         return User.builder()
                    .username(user.getUserEmail())
                    .password(user.getPassword())
